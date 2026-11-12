@@ -259,6 +259,7 @@ private:
     std::size_t causeHead_ = 0;
     std::vector<Burst> bursts_;
     std::vector<PlayerSlot> players_;
+    std::vector<PlayerId> present_;  // players in the latest session sample (slot reuse)
     Tick now_ = 0;
     Tick nextUpdate_ = 0;
     Tick nextExposure_ = 0;

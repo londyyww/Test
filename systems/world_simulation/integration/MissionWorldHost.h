@@ -35,6 +35,8 @@ public:
     // Players: forwarded to the facility, containers and world-simulation relevance.
     bool ConnectPlayer(llworld::PlayerId id, std::uint64_t recipientKey, const llworld::Vec3& position, std::uint32_t permissions = 0xFFFFFFFFu);
     void MovePlayer(llworld::PlayerId id, const llworld::Vec3& position);
+    // Releases the player from the facility (channels), containers (claims) and relevance.
+    void DisconnectPlayer(llworld::PlayerId id);
 
     // ILootAccessPort
     bool IsPowered(std::string_view node) const override;
@@ -62,6 +64,7 @@ private:
     void TranslateEvents(std::size_t from);
     void PollWatches();
     void AddWatch(const std::string& node);
+    void PushPlayers();
 
     llworld::WorldIntelligence& wi_;
     llsim::WorldSimulation& sim_;
@@ -74,6 +77,7 @@ private:
     std::uint64_t signalsForwarded_ = 0;
     std::size_t consumed_ = 0;  // bus events already translated this tick
     ais::EventId lastLootEvent_ = 0;
+    int weatherSevere_ = 0;  // weather signals are edge-triggered; raids start without a storm signal
 };
 
 }  // namespace llws

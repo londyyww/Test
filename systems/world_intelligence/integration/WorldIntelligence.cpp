@@ -214,6 +214,11 @@ WorldIntelligence::WorldIntelligence(const WorldIntelligenceConfig& config, cons
     weather_ = std::make_unique<WeatherSystem>(cfg_.weather, &bus_);
     hazards_ = std::make_unique<HazardSystem>(cfg_.hazards, &bus_, ports_.get());
     squads_ = std::make_unique<SquadCoordinator>(cfg_.squads, &bus_, ports_.get());
+    // Configured robots count only once the engine spawns them (AddRobot); until then a
+    // declared member must not relay squad comms from a default position.
+    for (const SquadDef& sq : cfg_.squads.squads) {
+        for (const SquadMemberDef& m : sq.members) squads_->UpdateRobot(m.robot, Vec3{}, false, CommsHealth::Intact);
+    }
     for (const auto& e : ValidateWeather(cfg_.weather)) errors_.push_back("weather: " + e);
     for (const auto& e : hazards_->Errors()) errors_.push_back("hazards: " + e);
     for (const auto& e : squads_->Errors()) errors_.push_back("squads: " + e);
