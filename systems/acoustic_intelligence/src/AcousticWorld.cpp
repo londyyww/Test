@@ -9,7 +9,13 @@ namespace ais {
 namespace {
 constexpr double kTwoPi = 6.283185307179586;
 
-std::int64_t CellOf(double v, double cell) { return static_cast<std::int64_t>(std::floor(v / cell)); }
+// Saturating: out-of-world or NaN coordinates must never reach the integer cast (UB).
+std::int64_t CellOf(double v, double cell) {
+    const double c = std::floor(v / cell);
+    if (!(c > -4.0e15)) return -4000000000000000LL;
+    if (!(c < 4.0e15)) return 4000000000000000LL;
+    return static_cast<std::int64_t>(c);
+}
 }  // namespace
 
 AcousticWorld::AcousticWorld(const AisConfig& config, const IAcousticEnvironment& environment, AuthorityRole role,

@@ -360,7 +360,7 @@ bool ParseUnsigned(std::string_view s, std::uint64_t& out) {
     if (tmp.empty() || tmp[0] == '-') return false;
     char* end = nullptr;
     errno = 0;
-    const unsigned long long v = std::strtoull(tmp.c_str(), &end, 0);
+    const unsigned long long v = std::strtoull(tmp.c_str(), &end, 10);
     if (errno != 0 || end != tmp.c_str() + tmp.size()) return false;
     out = static_cast<std::uint64_t>(v);
     return true;

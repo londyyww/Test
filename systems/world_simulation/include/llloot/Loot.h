@@ -24,6 +24,8 @@ using llworld::Vec3;
 
 inline constexpr std::uint32_t kNone = 0xFFFFFFFFu;
 inline constexpr std::uint32_t kLootConfigVersion = 1;
+inline constexpr Tick kMaxConfigTicks = 1ull << 32;  // same bound as the world simulation
+inline constexpr double kMaxWeight = 1e6;            // keeps weight totals finite and precise
 
 // Stable across platforms and compilers (FNV-1a 64); used for seeds and grant ids.
 inline constexpr std::uint64_t StableHash(std::string_view s) {

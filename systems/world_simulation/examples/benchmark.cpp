@@ -133,5 +133,85 @@ int main() {
     const double gens = static_cast<double>(raids) * static_cast<double>(all.loot.containers.size());
     std::printf("\nloot generation: %.0f containers in %.1f ms = %.2f us/container (%.2f items avg) [%llx]\n", gens, ms, ms * 1000.0 / gens,
                 static_cast<double>(items) / gens, static_cast<unsigned long long>(sink & 0xF));
+
+    // ---------------------------------------------------------------- stress: container count
+    for (int nContainers : {1000, 10000, 50000}) {
+        const int locations = std::max(1, nContainers / 100);
+        std::string t = "[content]\nversion = 1\n[table.T]\nentry = mech.bearing_set | weight=3 | qty=1-3\nentry = elec.copper_wire | weight=2\n"
+                        "[profile.P]\npool = T | guaranteed | rolls=1-2\n";
+        for (int l = 0; l < locations; ++l) t += "[location.L" + std::to_string(l) + "]\ntype = Industrial\nprofile.Toolbox = P\n";
+        for (int i = 0; i < nContainers; ++i) {
+            t += "[container.C" + std::to_string(i) + "]\nlocation = L" + std::to_string(i % locations) + "\ntype = TOOLBOX\nposition = " +
+                 std::to_string((i % 100) * 500) + ", " + std::to_string((i / 100) * 500) + ", 0\n";
+            if (i % 10 == 0) t += "access = power:N" + std::to_string(i / 10) + "\n";
+        }
+        Content sc;
+        std::vector<std::string> errors;
+        llcontent::LoadContentFile(Data("common.ini"), sc.loot, sc.sim, errors);
+        const auto l0 = Clock::now();
+        llcontent::LoadContentText(t, "stress", sc.loot, sc.sim, errors);
+        const double loadMs = std::chrono::duration<double, std::milli>(Clock::now() - l0).count();
+        const auto v0 = Clock::now();
+        const auto problems = llloot::ValidateLoot(sc.loot, Catalog());
+        const double validateMs = std::chrono::duration<double, std::milli>(Clock::now() - v0).count();
+        Access access;
+        MemInventory inv;
+        const auto c0 = Clock::now();
+        llloot::ContainerService svc(sc.loot, Catalog());
+        svc.SetAccessPort(&access);
+        svc.SetGrantPort(&inv);
+        svc.BeginRaid(7);
+        const double beginMs = std::chrono::duration<double, std::milli>(Clock::now() - c0).count();
+        for (llloot::PlayerId p = 1; p <= 4; ++p) svc.ConnectPlayer(p, p, {0, 0, 0});
+        // 4 players search 2,000 containers back to back.
+        const auto s0 = Clock::now();
+        llloot::Tick now = 0;
+        std::uint32_t seq = 0;
+        for (int k = 0; k < 2000; ++k) {
+            const auto c = static_cast<std::uint32_t>((k * 7919) % nContainers);
+            const llloot::PlayerId p = static_cast<llloot::PlayerId>(1 + k % 4);
+            svc.UpdatePlayerPosition(p, svc.Def(c).position);
+            svc.Submit({p, ++seq, c, llloot::LootAction::Search, 0});
+            if (k % 4 == 3) {
+                for (int s = 0; s < 46; ++s) svc.Step(++now);
+            }
+        }
+        const double searchMs = std::chrono::duration<double, std::milli>(Clock::now() - s0).count();
+        const auto n0 = Clock::now();
+        for (int k = 0; k < 1000; ++k) svc.NotifyInfrastructureChanged("N" + std::to_string(k % (nContainers / 10)));
+        const double notifyUs = std::chrono::duration<double, std::micro>(Clock::now() - n0).count() / 1000.0;
+        std::printf("containers %6d: load %.1f ms, validate %.1f ms (%zu issues), service+BeginRaid %.1f ms, 2000 searches %.1f ms "
+                    "(%.1f us each, %llu completed), power notify %.1f us\n",
+                    nContainers, loadMs, validateMs, problems.size(), beginMs, searchMs, searchMs * 1000.0 / 2000.0,
+                    static_cast<unsigned long long>(svc.GetStats().searchesCompleted), notifyUs);
+    }
+
+    // ---------------------------------------------------------------- stress: simultaneous world events
+    {
+        Content c;
+        std::vector<std::string> errors;
+        llcontent::LoadContentText(SyntheticWorld(5000), "synthetic", c.loot, c.sim, errors);
+        llsim::WorldSimulation w(c.sim);
+        w.BeginRaid(1);
+        w.AdvanceTo(100);
+        const auto a0 = Clock::now();
+        for (int s = 0; s < 500; ++s) w.NotifySignal(llsim::SignalKind::AlarmRaised, "SEC" + std::to_string(s));
+        const double alarmMs = std::chrono::duration<double, std::milli>(Clock::now() - a0).count();
+        const auto st0 = Clock::now();
+        w.Step();
+        const double stepUs = std::chrono::duration<double, std::micro>(Clock::now() - st0).count();
+        std::printf("\n500 simultaneous facility alarms (5000 entities): signals %.2f ms total, next step %.1f us, transitions %llu, rules %llu, "
+                    "deferred transitions %llu\n",
+                    alarmMs, stepUs, static_cast<unsigned long long>(w.Stats().transitions), static_cast<unsigned long long>(w.Stats().rulesFired),
+                    static_cast<unsigned long long>(w.Stats().deferredTransitions));
+        const auto f0 = Clock::now();
+        for (int k = 0; k < 100000; ++k) w.NotifySignal(k % 2 ? llsim::SignalKind::AlarmCleared : llsim::SignalKind::AlarmRaised, "SEC0");
+        const double floodUs = std::chrono::duration<double, std::micro>(Clock::now() - f0).count() / 100000.0;
+        const auto d0 = Clock::now();
+        for (int k = 0; k < 10000; ++k) w.ReportDisturbance({static_cast<double>(k % 1000) * 1000.0, 0, 0}, 70.0);
+        const double distUs = std::chrono::duration<double, std::micro>(Clock::now() - d0).count() / 10000.0;
+        std::printf("signal flood: %.2f us per signal (100k); disturbance: %.2f us each (10k, scans %zu areas + patrol list)\n", floodUs, distUs,
+                    c.sim.areas.size());
+    }
     return 0;
 }

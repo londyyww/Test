@@ -32,13 +32,17 @@ const char* ToString(LootEventType t) {
 
 ContainerService::ContainerService(const LootConfig& config, const IItemCatalog& catalog, ContainerServiceConfig sc)
     : cfg_(config), catalog_(catalog), sc_(sc) {
+    // Sorted node -> containers index: built in O(n log n), queried by binary search.
+    std::vector<std::pair<std::string, std::uint32_t>> pairs;
     for (std::size_t c = 0; c < cfg_.containers.size(); ++c) {
         for (const AccessRequirement& a : cfg_.containers[c].access) {
-            if (a.kind != AccessKind::Power) continue;
-            auto it = std::find_if(powerIndex_.begin(), powerIndex_.end(), [&a](const auto& e) { return e.first == a.ref; });
-            if (it == powerIndex_.end()) it = powerIndex_.insert(powerIndex_.end(), {a.ref, {}});
-            it->second.push_back(static_cast<std::uint32_t>(c));
+            if (a.kind == AccessKind::Power) pairs.emplace_back(a.ref, static_cast<std::uint32_t>(c));
         }
+    }
+    std::sort(pairs.begin(), pairs.end());
+    for (const auto& [node, c] : pairs) {
+        if (powerIndex_.empty() || powerIndex_.back().first != node) powerIndex_.push_back({node, {}});
+        powerIndex_.back().second.push_back(c);
     }
     rt_.resize(cfg_.containers.size());
 }
@@ -53,6 +57,8 @@ void ContainerService::BeginRaid(std::uint64_t raidSeed) {
         if (cfg_.OwnershipFor(cfg_.containers[c]) == OwnershipPolicy::Shared) rt_[c].instances.emplace_back();
         rt_[c].lastAccessible = PowerOk(static_cast<std::uint32_t>(c));
     }
+    // Players who left during the previous raid free their slot; connected players stay.
+    players_.erase(std::remove_if(players_.begin(), players_.end(), [](const Player& p) { return !p.connected; }), players_.end());
     for (Player& p : players_) {
         p.recentCount = 0;
         p.recentHead = 0;
@@ -84,12 +90,35 @@ bool ContainerService::ConnectPlayer(PlayerId id, std::uint64_t key, const Vec3&
     if (Player* p = FindPlayer(id)) {
         if (p->key != key) return false;  // a reconnect must keep its recipient key
         p->connected = true;
+        p->recentCount = 0;  // sequence numbers are per session; replays are still caught by state checks
+        p->recentHead = 0;
         p->position = position;
         return true;
     }
-    if (players_.size() >= sc_.maxPlayers) return false;
-    for (const Player& p : players_) {
-        if (p.key == key) return false;
+    if (players_.size() >= sc_.maxPlayers || std::any_of(players_.begin(), players_.end(), [key](const Player& q) { return q.key == key; })) {
+        // Reconnect under a new engine id: the same party slot (key) rebinds if
+        // its previous session is disconnected. A live session cannot be hijacked.
+        for (Player& q : players_) {
+            if (q.key != key) continue;
+            if (q.connected) return false;
+            const PlayerId old = q.id;
+            q.id = id;
+            q.connected = true;
+            q.position = position;
+            q.recentCount = 0;
+            q.recentHead = 0;
+            for (Runtime& r : rt_) {
+                for (Instance& inst : r.instances) {
+                    if (inst.owner == old) inst.owner = id;
+                    for (PlayerId& h : inst.holders) h = h == old ? id : h;
+                }
+            }
+            for (PendingGrant& g : pending_) {
+                if (g.owner == old) g.owner = id;
+            }
+            return true;
+        }
+        return false;
     }
     Player p;
     p.id = id;

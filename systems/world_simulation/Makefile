@@ -21,8 +21,10 @@ STACK_SRC := $(wildcard $(WI_DIR)/src/*.cpp) $(WI_DIR)/integration/WorldIntellig
              $(wildcard $(AIS_DIR)/src/*.cpp) $(wildcard $(ENV_DIR)/src/*.cpp) $(ENV_DIR)/bridge/AisAcousticBridge.cpp
 INT_SRC  := integration/MissionWorldHost.cpp
 FULL_INC := $(CORE_INC) -Iintegration -I$(WI_DIR)/integration -I$(AIS_DIR)/include -I$(ENV_DIR)/include -I$(ENV_DIR)/bridge
-UNIT     := tests/test_main.cpp tests/test_loot.cpp tests/test_containers.cpp tests/test_sim.cpp tests/test_config.cpp
+UNIT     := tests/test_main.cpp tests/test_loot.cpp tests/test_containers.cpp tests/test_sim.cpp tests/test_config.cpp tests/test_adversarial.cpp
 HDRS     := $(wildcard include/*/*.h integration/*.h tests/*.h tests/fixtures/*.h)
+# Sibling systems are compiled into the stack binaries: changes there must trigger rebuilds.
+STACK_DEP := $(STACK_SRC) $(CORE_DEP) $(wildcard $(WI_DIR)/include/llworld/*.h $(WI_DIR)/integration/*.h $(AIS_DIR)/include/ais/*.h $(ENV_DIR)/include/llenv/*.h $(ENV_DIR)/bridge/*.h)
 DATA     := -DWS_DATA_DIR='"$(CURDIR)/data"'
 
 .PHONY: all test unit scenarios bench sanitize ue-compat regress clean
@@ -30,19 +32,19 @@ DATA     := -DWS_DATA_DIR='"$(CURDIR)/data"'
 all: $(BUILD)/ws_unit_tests $(BUILD)/ws_tests $(BUILD)/scenarios $(BUILD)/benchmark
 
 # Core-only tests: prove the portable core builds without AIS / power grid / Unreal.
-$(BUILD)/ws_unit_tests: $(CORE_SRC) $(UNIT) $(HDRS)
+$(BUILD)/ws_unit_tests: $(CORE_SRC) $(UNIT) $(HDRS) $(CORE_DEP) $(wildcard $(WI_DIR)/include/llworld/*.h)
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) $(CORE_INC) -Itests $(DATA) $(CORE_SRC) $(CORE_DEP) $(UNIT) -o $@
 
-$(BUILD)/ws_tests: $(CORE_SRC) $(INT_SRC) $(wildcard tests/*.cpp) $(HDRS)
+$(BUILD)/ws_tests: $(CORE_SRC) $(INT_SRC) $(wildcard tests/*.cpp) $(HDRS) $(STACK_DEP)
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) $(FULL_INC) -Itests $(DATA) $(CORE_SRC) $(STACK_SRC) $(INT_SRC) $(wildcard tests/*.cpp) -o $@
 
-$(BUILD)/scenarios: $(CORE_SRC) $(INT_SRC) examples/scenarios.cpp $(HDRS)
+$(BUILD)/scenarios: $(CORE_SRC) $(INT_SRC) examples/scenarios.cpp $(HDRS) $(STACK_DEP)
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXFLAGS) $(FULL_INC) -Itests $(DATA) $(CORE_SRC) $(STACK_SRC) $(INT_SRC) examples/scenarios.cpp -o $@
 
-$(BUILD)/benchmark: $(CORE_SRC) examples/benchmark.cpp $(HDRS)
+$(BUILD)/benchmark: $(CORE_SRC) examples/benchmark.cpp $(HDRS) $(CORE_DEP)
 	@mkdir -p $(BUILD)
 	$(CXX) $(CXXSTD) $(WARN) -O2 $(CORE_INC) -Itests $(DATA) $(CORE_SRC) $(CORE_DEP) examples/benchmark.cpp -o $@
 

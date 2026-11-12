@@ -589,7 +589,14 @@ HazardSystem::PlayerSlot* HazardSystem::SlotFor(PlayerId p) {
     for (auto& s : players_) {
         if (s.id == p) return &s;
     }
-    if (players_.size() >= cfg_.maxPlayers) return nullptr;
+    if (players_.size() >= cfg_.maxPlayers) {
+        // Full: reuse a slot held by an id that is not in the current session sample,
+        // so bogus or departed ids cannot lock real players out permanently.
+        auto stale = std::find_if(players_.begin(), players_.end(),
+                                  [this](const PlayerSlot& s) { return std::find(present_.begin(), present_.end(), s.id) == present_.end(); });
+        if (stale == players_.end() || std::find(present_.begin(), present_.end(), p) == present_.end()) return nullptr;
+        players_.erase(stale);
+    }
     PlayerSlot s;
     s.id = p;
     s.tokens = cfg_.requestBurst;
@@ -665,7 +672,10 @@ HazardExposure HazardSystem::ExposureAt(const Vec3& pos) const {
 }
 
 void HazardSystem::SamplePlayers(const std::vector<PlayerSample>& players, Tick now) {
-    if (!IsValid() || now < nextExposure_) return;
+    if (!IsValid()) return;
+    present_.clear();
+    for (const PlayerSample& p : players) present_.push_back(p.player);
+    if (now < nextExposure_) return;
     nextExposure_ = now + cfg_.exposureIntervalTicks;
     const double secs = static_cast<double>(cfg_.exposureIntervalTicks) / cfg_.ticksPerSecond;
     for (const PlayerSample& p : players) {
