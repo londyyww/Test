@@ -456,6 +456,7 @@ std::vector<std::string> ValidateLoot(const LootConfig& cfg, const IItemCatalog&
         if (t.capacity == 0) out.push_back("container type '" + t.id + "': capacity must be at least 1");
         if (t.capacity > 256) out.push_back("container type '" + t.id + "': capacity " + std::to_string(t.capacity) + " exceeds the 256-slot limit");
         if (t.searchTicks == 0) out.push_back("container type '" + t.id + "': search_ticks must be at least 1");
+        if (t.searchTicks > kMaxConfigTicks || t.forceTicks > kMaxConfigTicks) out.push_back("container type '" + t.id + "': search_ticks / force_ticks exceed the 2^32 tick limit");
         if (!std::isfinite(t.interactRangeCm) || t.interactRangeCm <= 0.0) out.push_back("container type '" + t.id + "': interact_range_cm must be > 0");
         if (!std::isfinite(t.searchNoiseDb) || !std::isfinite(t.forceNoiseDb)) out.push_back("container type '" + t.id + "': noise must be finite");
     }
@@ -468,7 +469,7 @@ std::vector<std::string> ValidateLoot(const LootConfig& cfg, const IItemCatalog&
         std::uint32_t smallest = 0xFFFFFFFFu;
         for (const TableEntryDef& e : t.entries) {
             const std::string where = "loot table '" + t.id + "' entry '" + e.itemId + "'";
-            if (!std::isfinite(e.weight) || e.weight <= 0.0) out.push_back(where + ": weight must be a finite number > 0");
+            if (!std::isfinite(e.weight) || e.weight <= 0.0 || e.weight > kMaxWeight) out.push_back(where + ": weight must be a finite number > 0 and <= 1e6");
             if (e.qtyMin == 0 || e.qtyMin > e.qtyMax) out.push_back(where + ": quantity range must satisfy 1 <= min <= max");
             if (!e.condition.empty() && cfg.FindCondition(e.condition) == kNone)
                 out.push_back(where + ": unknown condition range '" + e.condition + "'");
@@ -556,7 +557,7 @@ std::vector<std::string> ValidateLoot(const LootConfig& cfg, const IItemCatalog&
         const std::string where = "location '" + l.id + "'";
         double sum = 0.0;
         for (double w : l.rarityWeights) {
-            if (!std::isfinite(w) || w < 0.0) out.push_back(where + ": rarity weights must be finite and >= 0");
+            if (!std::isfinite(w) || w < 0.0 || w > kMaxWeight) out.push_back(where + ": rarity weights must be within 0..1e6");
             sum += w;
         }
         if (!(sum > 0.0)) out.push_back(where + ": all rarity weights are zero; nothing could ever drop");
@@ -579,7 +580,7 @@ std::vector<std::string> ValidateLoot(const LootConfig& cfg, const IItemCatalog&
         if (!c.position.IsFinite()) out.push_back(where + ": position must be finite");
         if (!c.profile.empty() && cfg.FindProfile(c.profile) == kNone) out.push_back(where + ": unknown profile '" + c.profile + "'");
         for (const AccessRequirement& a : c.access) {
-            if (a.kind == AccessKind::Work && a.workTicks == 0) out.push_back(where + ": work access needs ticks > 0");
+            if (a.kind == AccessKind::Work && (a.workTicks == 0 || a.workTicks > kMaxConfigTicks)) out.push_back(where + ": work access needs 1..2^32 ticks");
         }
         if (loc == kNone || type == kNone) continue;
         const std::uint32_t prof = cfg.ProfileFor(c);

@@ -53,6 +53,8 @@ void ContainerService::BeginRaid(std::uint64_t raidSeed) {
         if (cfg_.OwnershipFor(cfg_.containers[c]) == OwnershipPolicy::Shared) rt_[c].instances.emplace_back();
         rt_[c].lastAccessible = PowerOk(static_cast<std::uint32_t>(c));
     }
+    // Players who left during the previous raid free their slot; connected players stay.
+    players_.erase(std::remove_if(players_.begin(), players_.end(), [](const Player& p) { return !p.connected; }), players_.end());
     for (Player& p : players_) {
         p.recentCount = 0;
         p.recentHead = 0;
@@ -62,6 +64,8 @@ void ContainerService::BeginRaid(std::uint64_t raidSeed) {
 void ContainerService::EndRaid() {
     active_ = false;
     work_.clear();
+    // Extraction ends every session; the next BeginRaid frees their slots.
+    for (Player& p : players_) p.connected = false;
 }
 
 // ---------------------------------------------------------------- players
@@ -87,9 +91,28 @@ bool ContainerService::ConnectPlayer(PlayerId id, std::uint64_t key, const Vec3&
         p->position = position;
         return true;
     }
-    if (players_.size() >= sc_.maxPlayers) return false;
-    for (const Player& p : players_) {
-        if (p.key == key) return false;
+    if (players_.size() >= sc_.maxPlayers || std::any_of(players_.begin(), players_.end(), [key](const Player& q) { return q.key == key; })) {
+        // Reconnect under a new engine id: the same party slot (key) rebinds if
+        // its previous session is disconnected. A live session cannot be hijacked.
+        for (Player& q : players_) {
+            if (q.key != key) continue;
+            if (q.connected) return false;
+            const PlayerId old = q.id;
+            q.id = id;
+            q.connected = true;
+            q.position = position;
+            for (Runtime& r : rt_) {
+                for (Instance& inst : r.instances) {
+                    if (inst.owner == old) inst.owner = id;
+                    for (PlayerId& h : inst.holders) h = h == old ? id : h;
+                }
+            }
+            for (PendingGrant& g : pending_) {
+                if (g.owner == old) g.owner = id;
+            }
+            return true;
+        }
+        return false;
     }
     Player p;
     p.id = id;
