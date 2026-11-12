@@ -1,0 +1,19 @@
+#include "StackRig.h"
+using namespace wstest;
+int main() {
+  for (double d : {300.0, 600.0, 1000.0, 1800.0}) {
+    StackRig r({"dead_frequency_depot.ini"}, "scenarios/depot_power.ini", "scenarios/depot_world.ini", 2026);
+    r.AddRobot(1, "SENTINEL", {0, 0, 0});
+    r.Join(1, {d, 0, 0});
+    r.Step(120);
+    std::vector<ais::PerceptionRecord> heard;
+    r.wi->Acoustic().SetPerceptionObserver(&heard);
+    int acc = 0;
+    for (int i = 0; i < 10; ++i) { acc += r.wi->PlayerFootstep(1, {d, 0, 0}, ais::SurfaceType::Concrete) == ais::SubmitResult::Accepted; r.Step(15); }
+    std::printf("d=%.0f accepted=%d heard=%zu\n", d, acc, heard.size());
+  }
+  auto r = std::make_unique<StackRig>(std::vector<const char*>{"dead_frequency_depot.ini"}, "scenarios/depot_power.ini", "scenarios/depot_world.ini", 2026);
+  r->AddRobot(1, "SENTINEL", {1500, 2400, 0}); r->AddRobot(2, "SENTINEL", {0, -2500, 0});
+  r->Join(1, {0, -1500, 0});
+  for (int t = 0; t < 40; ++t) { r->Step(1); if (t % 5 == 0) std::printf("t=%d can=%d conn2=%d\n", t, r->wi->Squads().CanCommunicate(1,2), r->wi->Squads().IsConnected(2)); }
+}

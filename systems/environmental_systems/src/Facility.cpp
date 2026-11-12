@@ -9,6 +9,14 @@
 namespace llenv {
 
 namespace {
+// Converts a duration in ticks held as double; out-of-range or NaN values saturate
+// instead of reaching the (undefined) double-to-integer cast.
+Tick SaturatingTicks(double v) {
+    const double t = std::ceil(v);
+    constexpr double kMax = 1099511627776.0;  // 2^40 ticks (~1100 years @30 Hz)
+    if (!(t > 0.0)) return 0;
+    return t >= kMax ? static_cast<Tick>(kMax) : static_cast<Tick>(t);
+}
 
 bool HeapLater(const TimerEntry& a, const TimerEntry& b) {
     return a.tick != b.tick ? a.tick > b.tick : a.seq > b.seq;
@@ -102,6 +110,15 @@ bool Facility::ConnectPlayer(PlayerId id, const Vec3& position, std::uint32_t pe
     if (existing != nullptr && existing->connected) return false;
     if (connected >= config_.maxPlayers) return false;
     if (existing == nullptr) {
+        // Disconnected sessions are kept so replays stay rejected after a reconnect,
+        // but engines hand out fresh ids: bound the history (lowest disconnected id evicted).
+        const std::size_t keep = config_.maxPlayers * 4;
+        while (players_.size() >= keep) {
+            auto victim = std::find_if(players_.begin(), players_.end(), [](const PlayerSession& p) { return !p.connected; });
+            if (victim == players_.end()) break;
+            RemoveFromChannels(victim->id);
+            players_.erase(victim);
+        }
         PlayerSession s;
         s.id = id;
         s.tokens = config_.requestBurst;
@@ -570,10 +587,10 @@ void Facility::SolveNetwork(std::size_t network) {
         Cancel(b, TimerKind::BatteryEmpty);
         Cancel(b, TimerKind::BatteryFull);
         if (s.batteryRateKw > kEps) {
-            Schedule(b, TimerKind::BatteryEmpty, static_cast<Tick>(std::ceil(s.charge / s.batteryRateKw)));
+            Schedule(b, TimerKind::BatteryEmpty, SaturatingTicks(s.charge / s.batteryRateKw));
         } else if (s.batteryRateKw < -kEps) {
             const double room = def_.nodes[b].batteryCapacityKwTicks - s.charge;
-            Schedule(b, TimerKind::BatteryFull, static_cast<Tick>(std::ceil(room / -s.batteryRateKw)));
+            Schedule(b, TimerKind::BatteryFull, SaturatingTicks(room / -s.batteryRateKw));
         }
     }
 
@@ -737,7 +754,7 @@ void Facility::SetGenerator(NodeIndex i, GeneratorState next) {
     s.gen = next;
     if (next == GeneratorState::Running) {
         s.fuelStamp = tick_;
-        if (s.fuel >= 0.0) Schedule(i, TimerKind::FuelEmpty, static_cast<Tick>(std::ceil(s.fuel)));
+        if (s.fuel >= 0.0) Schedule(i, TimerKind::FuelEmpty, SaturatingTicks(s.fuel));
         Schedule(i, TimerKind::NoisePulse, def_.nodes[i].noisePulseTicks);
     }
     UpdateContinuousSound(i);
@@ -1082,7 +1099,8 @@ InteractionResult Facility::Submit(const InteractionRequest& r) {
 
     // Duplicate requests (retransmits, double clicks, replays) are idempotent.
     const std::size_t window = p->recent.size();
-    const bool tooOld = p->highestSeq >= window && r.sequence + window <= p->highestSeq;
+    // 64-bit: sequences near UINT32_MAX must not wrap into "too old".
+    const bool tooOld = static_cast<std::uint64_t>(r.sequence) + window <= static_cast<std::uint64_t>(p->highestSeq);
     const bool seen = std::find(p->recent.begin(), p->recent.begin() + static_cast<std::ptrdiff_t>(p->recentCount), r.sequence) !=
                       p->recent.begin() + static_cast<std::ptrdiff_t>(p->recentCount);
     if (tooOld || seen) return Record(InteractionResult::RejectedDuplicate);
@@ -1167,7 +1185,7 @@ InteractionResult Facility::ApplyAction(NodeIndex i, InteractionAction a, Player
                 if (inventory_ == nullptr || !inventory_->ConsumeItem(by, d.fuelItem)) return R::RejectedMissingItem;
                 IntegrateFuel(i);
                 s.fuel += d.refuelAmountTicks;
-                if (s.gen == GeneratorState::Running) Schedule(i, TimerKind::FuelEmpty, static_cast<Tick>(std::ceil(s.fuel)));
+                if (s.gen == GeneratorState::Running) Schedule(i, TimerKind::FuelEmpty, SaturatingTicks(s.fuel));
                 Changed(i);
                 return R::Applied;
             }

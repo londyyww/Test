@@ -59,7 +59,7 @@ bool AcousticEventBus::TryMerge(const AcousticEvent& e, Tick now) {
     const BusConfig& b = config_.bus;
     const double r2 = b.dedupRadiusCm * b.dedupRadiusCm;
     for (const DedupEntry& d : dedupRing_) {
-        if (d.sourceId != e.sourceId || d.category != e.apparentCategory) continue;
+        if (d.id == 0 || d.sourceId != e.sourceId || d.category != e.apparentCategory) continue;  // 0 = evicted unheard
         const Tick age = now >= d.tick ? now - d.tick : 0;
         if (age > b.dedupWindowTicks) continue;
         if (DistanceSq(d.position, e.position) > r2) continue;
@@ -138,6 +138,7 @@ SubmitResult AcousticEventBus::Submit(const AcousticEvent& event, EventOrigin or
     AcousticEvent e = event;
     SubmitResult result = SubmitResult::Accepted;
     if (queue_.size() >= config_.bus.queueCapacity) {
+        if (queue_.empty()) return Record(SubmitResult::RejectedQueueFull);  // capacity 0: nothing to evict
         // Evict the lowest-priority queued event if the newcomer outranks it.
         auto lowest = std::min_element(queue_.begin(), queue_.end(), [this](const AcousticEvent& a, const AcousticEvent& b) {
             const double pa = PriorityOf(a);
@@ -145,6 +146,10 @@ SubmitResult AcousticEventBus::Submit(const AcousticEvent& event, EventOrigin or
             return pa != pb ? pa < pb : a.id > b.id;  // newest of equal priority goes first
         });
         if (PriorityOf(e) <= PriorityOf(*lowest)) return Record(SubmitResult::RejectedQueueFull);
+        // The evicted sound was never heard: a repeat of it must not be merged away.
+        for (DedupEntry& d : dedupRing_) {
+            if (d.id == lowest->id) d.id = 0;
+        }
         queue_.erase(lowest);
         ++stats_.evicted;
         result = SubmitResult::AcceptedEvictedLower;

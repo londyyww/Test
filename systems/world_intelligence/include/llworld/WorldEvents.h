@@ -77,6 +77,7 @@ private:
     std::vector<WorldEvent> previous_;
     std::uint64_t published_ = 0;
     std::uint64_t dropped_ = 0;
+    std::size_t gameThisTick_ = 0;  // game-reported events may use at most half of cap_
 };
 
 // --- Environmental state queries (read-only, used by AI, players and UI) ---
