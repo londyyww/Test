@@ -68,18 +68,31 @@ std::vector<std::string> MissionWorldHost::ValidateBindings() const {
 }
 
 bool MissionWorldHost::ConnectPlayer(llworld::PlayerId id, std::uint64_t key, const llworld::Vec3& p, std::uint32_t permissions) {
-    if (llenv::Facility* f = wi_.Facility()) f->ConnectPlayer(id, llenv::Vec3{p.x, p.y, p.z}, permissions);
+    // Containers first: a refused player must not be left half-connected in the facility.
     if (!loot_.ConnectPlayer(id, key, p)) return false;
+    if (llenv::Facility* f = wi_.Facility()) f->ConnectPlayer(id, llenv::Vec3{p.x, p.y, p.z}, permissions);
     MovePlayer(id, p);
     return true;
 }
 
+void MissionWorldHost::DisconnectPlayer(llworld::PlayerId id) {
+    loot_.DisconnectPlayer(id);
+    if (llenv::Facility* f = wi_.Facility()) f->DisconnectPlayer(id);
+    players_.erase(std::remove_if(players_.begin(), players_.end(), [id](const auto& e) { return e.first == id; }), players_.end());
+    PushPlayers();
+}
+
 void MissionWorldHost::MovePlayer(llworld::PlayerId id, const llworld::Vec3& p) {
+    if (!p.IsFinite()) return;
     if (llenv::Facility* f = wi_.Facility()) f->UpdatePlayerPosition(id, llenv::Vec3{p.x, p.y, p.z});
     loot_.UpdatePlayerPosition(id, p);
     auto it = std::find_if(players_.begin(), players_.end(), [id](const auto& e) { return e.first == id; });
     if (it == players_.end()) players_.emplace_back(id, p);
     else it->second = p;
+    PushPlayers();
+}
+
+void MissionWorldHost::PushPlayers() {
     std::vector<llworld::Vec3> positions;
     std::vector<llworld::PlayerSample> samples;
     for (const auto& [pid, pos] : players_) {
@@ -120,10 +133,15 @@ void MissionWorldHost::TranslateEvents(std::size_t from) {
             case T::PowerRestored: k = llsim::SignalKind::PowerRestored; break;
             case T::HazardActivated: k = llsim::SignalKind::HazardActivated; break;
             case T::HazardDeactivated: k = llsim::SignalKind::HazardCleared; break;
-            case T::WeatherChanged:
-                k = e.aux == static_cast<std::uint32_t>(llworld::WeatherKind::Storm) ? llsim::SignalKind::WeatherSevere : llsim::SignalKind::WeatherCleared;
+            case T::WeatherChanged: {
+                // Published at transition start and end: forward only real severity changes.
+                const int severe = e.aux == static_cast<std::uint32_t>(llworld::WeatherKind::Storm) ? 1 : 0;
+                if (severe == weatherSevere_) continue;
+                weatherSevere_ = severe;
+                k = severe != 0 ? llsim::SignalKind::WeatherSevere : llsim::SignalKind::WeatherCleared;
                 ref.clear();
                 break;
+            }
             case T::Gunfire: sim_.ReportDisturbance(e.position, kGunfireDb); continue;
             case T::Explosion:
             case T::GasIgnition: sim_.ReportDisturbance(e.position, kExplosionDb); continue;

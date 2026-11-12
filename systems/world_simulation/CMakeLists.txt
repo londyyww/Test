@@ -39,7 +39,7 @@ target_include_directories(llws_integration PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/i
 target_link_libraries(llws_integration PUBLIC llws_stack)
 target_compile_options(llws_integration PRIVATE ${WS_WARNINGS})
 
-set(WS_UNIT_TESTS tests/test_main.cpp tests/test_loot.cpp tests/test_containers.cpp tests/test_sim.cpp tests/test_config.cpp)
+set(WS_UNIT_TESTS tests/test_main.cpp tests/test_loot.cpp tests/test_containers.cpp tests/test_sim.cpp tests/test_config.cpp tests/test_adversarial.cpp)
 add_executable(ws_unit_tests ${WS_UNIT_TESTS})
 target_include_directories(ws_unit_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 target_compile_definitions(ws_unit_tests PRIVATE ${WS_DATA_DEF})
