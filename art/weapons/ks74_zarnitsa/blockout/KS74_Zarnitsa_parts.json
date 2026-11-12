@@ -1,0 +1,599 @@
+{
+  "asset": "KS74_Zarnitsa_Blockout",
+  "units": "mm in this report; Blender scene in metres (1 Blender m = 100 UE units)",
+  "axes": "+X muzzle (UE forward), +Z up, +Y rifle-left (UE -Y after FBX import)",
+  "origin": "KS74_Root = bore axis directly above the pistol grip",
+  "overall_size_mm": [
+    946.8,
+    66.0,
+    301.1
+  ],
+  "triangles_with_bevels": 18060,
+  "sockets": {
+    "Optic_Top": [
+      59.8,
+      0.0,
+      64.1
+    ],
+    "Optic_Side": [
+      94.2,
+      23.5,
+      12.7
+    ],
+    "Muzzle": [
+      556.8,
+      0.0,
+      0.0
+    ],
+    "MuzzleFlash": [
+      654.7,
+      0.0,
+      0.0
+    ],
+    "Underbarrel": [
+      319.4,
+      0.0,
+      -42.4
+    ],
+    "Tactical_L": [
+      343.9,
+      25.0,
+      -5.7
+    ],
+    "Magazine": [
+      167.7,
+      0.0,
+      -27.3
+    ],
+    "Stock": [
+      -48.0,
+      0.0,
+      1.4
+    ],
+    "Grip": [
+      0.0,
+      0.0,
+      -26.8
+    ],
+    "Hand_L": [
+      320.3,
+      0.0,
+      -33.0
+    ],
+    "Eject": [
+      124.8,
+      -16.0,
+      18.8
+    ]
+  },
+  "parts": [
+    {
+      "name": "KS74_Receiver",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        280.7,
+        32.3,
+        54.6
+      ],
+      "note": "Stamped receiver, factory 2031. Ejection port cut on the right (-Y)."
+    },
+    {
+      "name": "KS74_DustCover",
+      "parent": "KS74_Root",
+      "material": "M_KS74_PaintOD",
+      "pivot_mm": [
+        227.0,
+        0.0,
+        26.4
+      ],
+      "size_mm": [
+        278.3,
+        32.0,
+        27.8
+      ],
+      "note": "Owner I repaint. Pivot at the front lock into the rear-sight block."
+    },
+    {
+      "name": "KS74_DustCover_TopRail",
+      "parent": "KS74_DustCover",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        168.6,
+        21.2,
+        12.7
+      ],
+      "note": "Welded Picatinny strip, 10 mm slot pitch. Socket Optic_Top."
+    },
+    {
+      "name": "KS74_RearSight",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        54.6,
+        26.0,
+        34.4
+      ],
+      "note": "AK-74 leaf sight block."
+    },
+    {
+      "name": "KS74_SideRail",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        163.9,
+        8.5,
+        21.7
+      ],
+      "note": "Bolted left-side Picatinny. Socket Optic_Side."
+    },
+    {
+      "name": "KS74_BoltCarrier",
+      "parent": "KS74_Root",
+      "material": "M_KS74_SteelWorn",
+      "pivot_mm": [
+        181.8,
+        -28.0,
+        22.6
+      ],
+      "size_mm": [
+        102.6,
+        38.0,
+        17.3
+      ],
+      "note": "Bolt carrier + charging handle (right). Animate along -X ~ 125 mm travel."
+    },
+    {
+      "name": "KS74_Selector",
+      "parent": "KS74_Root",
+      "material": "M_KS74_SteelBare",
+      "pivot_mm": [
+        -25.4,
+        -16.0,
+        3.8
+      ],
+      "size_mm": [
+        131.8,
+        2.0,
+        25.4
+      ],
+      "note": "AK selector lever, right side. Pivot at its rear axle (rotate about Y)."
+    },
+    {
+      "name": "KS74_TriggerGuard",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        77.2,
+        12.0,
+        43.0
+      ],
+      "note": ""
+    },
+    {
+      "name": "KS74_Trigger",
+      "parent": "KS74_Root",
+      "material": "M_KS74_SteelBare",
+      "pivot_mm": [
+        59.3,
+        0.0,
+        -28.3
+      ],
+      "size_mm": [
+        10.7,
+        7.0,
+        28.1
+      ],
+      "note": "Pivot at trigger pin."
+    },
+    {
+      "name": "KS74_MagCatch",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        7.5,
+        14.0,
+        46.0
+      ],
+      "note": ""
+    },
+    {
+      "name": "KS74_Grip",
+      "parent": "KS74_Root",
+      "material": "M_KS74_PolymerBlack",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        -26.8
+      ],
+      "size_mm": [
+        84.8,
+        30.0,
+        119.8
+      ],
+      "note": "Swappable grip. Socket Grip at its top."
+    },
+    {
+      "name": "KS74_Grip_Tape",
+      "parent": "KS74_Grip",
+      "material": "M_KS74_Tape",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        81.4,
+        33.2,
+        95.4
+      ],
+      "note": "Owner IV electrical-tape wrap."
+    },
+    {
+      "name": "KS74_Stock",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Wood",
+      "pivot_mm": [
+        -48.0,
+        0.0,
+        1.4
+      ],
+      "size_mm": [
+        240.2,
+        41.8,
+        135.2
+      ],
+      "note": "Fixed walnut stock (owner II). Swap point = rear trunnion, socket Stock."
+    },
+    {
+      "name": "KS74_Stock_Buttplate",
+      "parent": "KS74_Stock",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        8.5,
+        43.0,
+        134.1
+      ],
+      "note": ""
+    },
+    {
+      "name": "KS74_Stock_Wrap",
+      "parent": "KS74_Stock",
+      "material": "M_KS74_Cloth",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        120.6,
+        49.7,
+        133.1
+      ],
+      "note": "Canvas cheek rag. Sculpt folds on top of this."
+    },
+    {
+      "name": "KS74_Stock_Cord",
+      "parent": "KS74_Stock",
+      "material": "M_KS74_Cord",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        24.5,
+        46.8,
+        135.3
+      ],
+      "note": "Cord lashing over the wrap."
+    },
+    {
+      "name": "KS74_Stock_Plate",
+      "parent": "KS74_Stock",
+      "material": "M_KS74_SteelWorn",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        75.3,
+        3.1,
+        47.5
+      ],
+      "note": "Cut steel repair plate, left side, mixed fasteners."
+    },
+    {
+      "name": "KS74_Magazine",
+      "parent": "KS74_Root",
+      "material": "M_KS74_PolymerMag",
+      "pivot_mm": [
+        167.7,
+        0.0,
+        -27.3
+      ],
+      "size_mm": [
+        125.0,
+        26.0,
+        206.4
+      ],
+      "note": "30-rd 5.45 polymer mag. Origin at the front lug for the rock-in reload."
+    },
+    {
+      "name": "KS74_Magazine_Floorplate",
+      "parent": "KS74_Magazine",
+      "material": "M_KS74_SteelWorn",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        61.3,
+        28.0,
+        52.0
+      ],
+      "note": ""
+    },
+    {
+      "name": "KS74_Magazine_Tape",
+      "parent": "KS74_Magazine",
+      "material": "M_KS74_Tape",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        71.4,
+        28.8,
+        41.9
+      ],
+      "note": "Tape band / pull tab."
+    },
+    {
+      "name": "KS74_Handguard_Lower",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Wood",
+      "pivot_mm": [
+        228.0,
+        0.0,
+        -5.7
+      ],
+      "size_mm": [
+        181.7,
+        50.0,
+        52.8
+      ],
+      "note": "Cracked walnut lower handguard (owner III). Socket Hand_L underneath."
+    },
+    {
+      "name": "KS74_Handguard_Lower_Tape",
+      "parent": "KS74_Handguard_Lower",
+      "material": "M_KS74_Tape",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        58.4,
+        52.4,
+        52.5
+      ],
+      "note": "Tape over the crack, ends tucked under the upper cover."
+    },
+    {
+      "name": "KS74_Handguard_Upper",
+      "parent": "KS74_Root",
+      "material": "M_KS74_PolymerOD",
+      "pivot_mm": [
+        261.0,
+        0.0,
+        32.0
+      ],
+      "size_mm": [
+        145.8,
+        44.0,
+        33.0
+      ],
+      "note": "Olive polymer replacement upper cover; lifts off with the gas tube."
+    },
+    {
+      "name": "KS74_GasTube",
+      "parent": "KS74_Handguard_Upper",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        60.3,
+        20.0,
+        20.0
+      ],
+      "note": ""
+    },
+    {
+      "name": "KS74_Handguard_Retainer",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        10.4,
+        52.0,
+        49.9
+      ],
+      "note": ""
+    },
+    {
+      "name": "KS74_Barrel",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        330.7,
+        24.0,
+        24.0
+      ],
+      "note": "Visible barrel, receiver face to thread shoulder; 24x1.5 LH thread at the front."
+    },
+    {
+      "name": "KS74_GasBlock",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        45.9,
+        26.0,
+        54.6
+      ],
+      "note": ""
+    },
+    {
+      "name": "KS74_FrontSight",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        47.1,
+        26.0,
+        87.6
+      ],
+      "note": ""
+    },
+    {
+      "name": "KS74_CleaningRod",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        117.8,
+        6.0,
+        6.0
+      ],
+      "note": ""
+    },
+    {
+      "name": "KS74_MuzzleBrake",
+      "parent": "KS74_Root",
+      "material": "M_KS74_SteelWorn",
+      "pivot_mm": [
+        556.8,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        99.9,
+        30.0,
+        30.0
+      ],
+      "note": "Two-chamber brake. Origin = thread shoulder = socket Muzzle (suppressor swap)."
+    },
+    {
+      "name": "KS74_ClampRail",
+      "parent": "KS74_Root",
+      "material": "M_KS74_Steel",
+      "pivot_mm": [
+        319.4,
+        0.0,
+        -38.6
+      ],
+      "size_mm": [
+        82.9,
+        21.2,
+        15.1
+      ],
+      "note": "Owner III rail held by two hose clamps. Socket Underbarrel."
+    },
+    {
+      "name": "KS74_HoseClamps",
+      "parent": "KS74_ClampRail",
+      "material": "M_KS74_SteelBare",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        71.6,
+        59.2,
+        94.7
+      ],
+      "note": ""
+    },
+    {
+      "name": "KS74_Flashlight",
+      "parent": "KS74_ClampRail",
+      "material": "M_KS74_PolymerBlack",
+      "pivot_mm": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "size_mm": [
+        99.9,
+        16.4,
+        16.7
+      ],
+      "note": "Placeholder weapon light."
+    }
+  ]
+}
