@@ -32,6 +32,9 @@ using llworld::Vec3;
 
 inline constexpr std::uint32_t kNone = 0xFFFFFFFFu;
 inline constexpr std::uint32_t kSimConfigVersion = 1;
+// Upper bound for any configured duration (~4.5 years @30 Hz). Keeps every
+// "now + duration" sum far from uint64 overflow for any realistic raid length.
+inline constexpr Tick kMaxConfigTicks = 1ull << 32;
 
 enum class EntityKind : std::uint8_t {
     PatrolGroup = 0,
