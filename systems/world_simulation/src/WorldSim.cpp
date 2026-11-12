@@ -407,6 +407,30 @@ bool Compile(const SimConfig& cfg, Compiled& c, std::vector<std::string>& out) {
                       std::to_string(cfg.tiers[1].intervalTicks) + ", " + std::to_string(cfg.tiers[2].intervalTicks) + ")");
     if (cfg.tiers[0].radiusCm > cfg.tiers[1].radiusCm) out.push_back("tier radii must satisfy High <= Medium");
     if (cfg.relevanceIntervalTicks == 0) out.push_back("[simulation] relevance_interval_ticks must be >= 1");
+    // Every configured duration is bounded so tick arithmetic can never wrap.
+    auto bounded = [&out](Tick v, const std::string& what) {
+        if (v > kMaxConfigTicks) out.push_back(what + " " + std::to_string(v) + " exceeds the 2^32 tick limit");
+    };
+    for (std::size_t t = 0; t < kTierCount; ++t) bounded(cfg.tiers[t].intervalTicks, std::string("[tier.") + kTierNames[t] + "] interval_ticks");
+    bounded(cfg.relevanceIntervalTicks, "[simulation] relevance_interval_ticks");
+    bounded(cfg.observedWindowTicks, "[simulation] observed_window_ticks");
+    for (const EntityDef& d : cfg.entities) {
+        const std::string w = "entity '" + d.id + "'";
+        bounded(d.startDelayTicks, w + " start_delay_ticks");
+        bounded(d.dwellTicks, w + " dwell_ticks");
+        bounded(d.travelTicks, w + " travel_ticks");
+        bounded(d.respondHoldTicks, w + " respond_hold_ticks");
+        bounded(d.activeTicks, w + " active_ticks");
+        bounded(d.dormantTicks, w + " dormant_ticks");
+        if (d.kind == K::Generator && std::isfinite(d.fuelSeconds) && std::isfinite(d.burnRate) && d.burnRate > 0.0 &&
+            d.fuelSeconds / d.burnRate * cfg.ticksPerSecond > static_cast<double>(kMaxConfigTicks))
+            out.push_back(w + " fuel_seconds / burn_rate exceeds the 2^32 tick limit");
+    }
+    for (const ScheduleDef& s : cfg.schedules) {
+        bounded(s.atTicks, "schedule '" + s.id + "' at_ticks");
+        bounded(s.repeatTicks, "schedule '" + s.id + "' repeat_ticks");
+    }
+    for (const RuleDef& r : cfg.rules) bounded(r.delayTicks, "rule '" + r.id + "' delay_ticks");
     if (cfg.maxUpdatesPerStep == 0 || cfg.maxTimersPerStep == 0 || cfg.maxTransitionsPerStep == 0)
         out.push_back("[simulation] per-step budgets must be >= 1");
     if (cfg.eventLogCapacity == 0) out.push_back("[simulation] event_log_capacity must be >= 1");
@@ -783,7 +807,11 @@ struct WorldSimulation::Impl {
         Push(updates, std::max(due, w.now_), i, kUpdate, r.updateGen);
     }
     Tick Interval(std::uint32_t i) const { return w.cfg_.tiers[static_cast<std::size_t>(e[i].tier)].intervalTicks; }
-    Tick SecondsToTicks(double s) const { return static_cast<Tick>(std::ceil(std::max(0.0, s) * Tps())); }
+    // Clamped: a double outside the Tick range must never reach the integer cast (UB).
+    Tick SecondsToTicks(double s) const {
+        const double t = std::ceil(std::max(0.0, s) * Tps());
+        return !(t < static_cast<double>(kMaxConfigTicks)) ? kMaxConfigTicks : static_cast<Tick>(t);
+    }
 
     void MarkDirty(std::uint32_t i) {
         if (e[i].dirty) return;
@@ -968,7 +996,12 @@ struct WorldSimulation::Impl {
 
     // ------------------------------------------------------------ signals
     void ApplySignal(SignalKind k, std::uint32_t i, const Vec3& pos) {
-        if (i != kNone) {
+        // A bound entity mirrors infrastructure that owns the truth: re-read it
+        // instead of trusting signal order (duplicates and stale signals are harmless).
+        const bool mirror = i != kNone && c.entities[i].bound && w.infra_ != nullptr && k != SignalKind::Disturbance &&
+                            k != SignalKind::WeatherSevere && k != SignalKind::WeatherCleared;
+        if (mirror) Resample(i);
+        if (i != kNone && !mirror) {
             const K kind = D(i).kind;
             switch (k) {
                 case SignalKind::PowerLost:
@@ -1514,7 +1547,7 @@ void WorldSimulation::ReportObserved(std::uint32_t i) {
 void WorldSimulation::ReportInteraction(std::uint32_t i) { ReportObserved(i); }
 
 void WorldSimulation::NotifySignal(SignalKind kind, std::string_view ref, const Vec3& position, double magnitude) {
-    if (!impl_ || phase_ != RaidPhase::Active) return;
+    if (!impl_ || phase_ != RaidPhase::Active || static_cast<std::size_t>(kind) >= kSignalKindCount) return;
     (void)magnitude;
     const auto& idx = impl_->bindIndex;
     auto lo = std::lower_bound(idx.begin(), idx.end(), ref, [](const auto& a, std::string_view b) { return a.first < b; });
@@ -1531,7 +1564,7 @@ void WorldSimulation::NotifySignal(SignalKind kind, std::string_view ref, const 
 }
 
 void WorldSimulation::NotifySignalForEntity(SignalKind kind, std::uint32_t i) {
-    if (!impl_ || phase_ != RaidPhase::Active) return;
+    if (!impl_ || phase_ != RaidPhase::Active || static_cast<std::size_t>(kind) >= kSignalKindCount) return;
     impl_->ApplySignal(kind, i < impl_->e.size() ? i : kNone, i < impl_->e.size() ? impl_->PositionOf(i) : Vec3{});
     impl_->ProcessTransitions();
 }
