@@ -244,6 +244,7 @@ bool SquadCoordinator::UpdateRobot(RobotId robot, const Vec3& position, bool ali
     if (m == nullptr || !position.IsFinite()) return false;
     m->position = position;
     m->alive = alive;
+    m->reported = true;
     m->comms = comms;
     return true;
 }
@@ -357,7 +358,8 @@ void SquadCoordinator::ComputeComms(std::uint32_t s, double weatherMul, Tick now
     std::vector<double> range(n, 0.0);
     for (std::size_t k = 0; k < n; ++k) {
         const Member& m = members_[idx[k]];
-        if (!m.alive || m.comms == CommsHealth::Destroyed) continue;
+        // Declared but never spawned members must not act as phantom relays at the origin.
+        if (!m.reported || !m.alive || m.comms == CommsHealth::Destroyed) continue;
         double r = cfg_.roles[m.role].commsRangeCm * weatherMul;
         if (m.comms == CommsHealth::Damaged) {
             r *= cfg_.damagedCommsRangeMul;

@@ -162,6 +162,7 @@ private:
         std::uint32_t role = 0;
         Vec3 position;
         bool alive = true;
+        bool reported = false;  // spawned and positioned by the engine at least once
         CommsHealth comms = CommsHealth::Intact;
         std::vector<Contact> board;
         std::uint32_t nextContactId = 1;
