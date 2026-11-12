@@ -17,6 +17,7 @@ namespace {
 constexpr const char* kCategoryNames[kCategoryCount] = {
     "Gunfire", "Footstep",  "Sprint",    "JumpLanding", "Door",          "BreakObject",
     "MetalImpact", "Explosion", "Machinery", "Generator",   "Environmental", "Decoy",
+    "Alarm",
 };
 constexpr const char* kSurfaceNames[kSurfaceCount] = {
     "None", "Concrete", "Metal", "Wood", "Gravel", "Grass", "Water", "Glass", "Debris",
@@ -205,6 +206,8 @@ AisConfig AisConfig::MakeDefault() {
     c.categories[Index(SC::Generator)] = Cat(68.0, {6.0, 0.0, -8.0}, 30, 0.35, 0.0, false, true);
     c.categories[Index(SC::Environmental)] = Cat(55.0, {0.0, 0.0, 0.0}, 3, 0.1, -10.0, false, false);
     c.categories[Index(SC::Decoy)] = Cat(70.0, {-6.0, 2.0, 0.0}, 30, 0.6, 0.0, false, true, 0.6);
+    // Legitimate facility alarm: loud, mid/high heavy, periodic by nature (not a decoy tell).
+    c.categories[Index(SC::Alarm)] = Cat(95.0, {-8.0, 0.0, 2.0}, 45, 0.85, 20.0, false, false);
 
     using ST = SurfaceType;
     c.surfaces[Index(ST::None)] = Surf(0.0, {0.0, 0.0, 0.0});

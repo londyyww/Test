@@ -22,7 +22,7 @@ struct RobotSensoryProfile {
 
     // --- Interpretation ----------------------------------------------------
     CategoryArray<double> categoryInterest{1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                                           1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
+                                           1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0};
     double baseEventGain = 30.0;       // suspicion points for an ideal stimulus
     double suspicionGainScale = 1.0;
     double maxSingleEventGain = 35.0;  // must stay below combatThreshold
