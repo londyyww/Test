@@ -28,17 +28,21 @@ void WorldEventBus::BeginTick(Tick now) {
     tick_ = now;
     previous_.swap(current_);
     current_.clear();
+    gameThisTick_ = 0;
 }
 
 std::uint64_t WorldEventBus::Publish(WorldEvent e) {
     if (current_.size() >= cap_ || !e.position.IsFinite() || !std::isfinite(e.magnitude) || !std::isfinite(e.radiusCm) ||
-        static_cast<std::size_t>(e.type) >= kWorldEventTypeCount) {
+        static_cast<std::size_t>(e.type) >= kWorldEventTypeCount ||
+        // Reserve half the bus for system events: a gunfire flood cannot starve PowerLost.
+        (e.source == WorldSystem::Game && gameThisTick_ >= (cap_ + 1) / 2)) {
         ++dropped_;
         return 0;
     }
     e.id = nextId_++;
     e.tick = tick_;
     current_.push_back(e);
+    if (e.source == WorldSystem::Game) ++gameThisTick_;
     ++published_;
     return e.id;
 }
