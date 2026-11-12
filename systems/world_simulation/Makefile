@@ -21,7 +21,7 @@ STACK_SRC := $(wildcard $(WI_DIR)/src/*.cpp) $(WI_DIR)/integration/WorldIntellig
              $(wildcard $(AIS_DIR)/src/*.cpp) $(wildcard $(ENV_DIR)/src/*.cpp) $(ENV_DIR)/bridge/AisAcousticBridge.cpp
 INT_SRC  := integration/MissionWorldHost.cpp
 FULL_INC := $(CORE_INC) -Iintegration -I$(WI_DIR)/integration -I$(AIS_DIR)/include -I$(ENV_DIR)/include -I$(ENV_DIR)/bridge
-UNIT     := tests/test_main.cpp tests/test_loot.cpp tests/test_containers.cpp tests/test_sim.cpp tests/test_config.cpp
+UNIT     := tests/test_main.cpp tests/test_loot.cpp tests/test_containers.cpp tests/test_sim.cpp tests/test_config.cpp tests/test_adversarial.cpp
 HDRS     := $(wildcard include/*/*.h integration/*.h tests/*.h tests/fixtures/*.h)
 DATA     := -DWS_DATA_DIR='"$(CURDIR)/data"'
 
