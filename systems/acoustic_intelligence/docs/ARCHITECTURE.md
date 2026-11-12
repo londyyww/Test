@@ -49,7 +49,7 @@
 | File | Responsibility |
 |---|---|
 | `AisTypes.h` | `Vec3` (cm, +Z up), `Tick`, band arrays, SplitMix64 hashing, `StateHasher` |
-| `AcousticEvent.h` | 12 categories, 9 surfaces, the `AcousticEvent` record |
+| `AcousticEvent.h` | 13 categories (12 original + `Alarm` for facility sirens), 9 surfaces, the `AcousticEvent` record |
 | `AcousticConfig.h/.cpp` | All coefficients, SENTINEL/WRAITH, default decoys, validation, strict INI loader |
 | `AcousticPropagation.h/.cpp` | `IAcousticEnvironment` port, `BoxAcousticEnvironment` reference implementation, propagation model |
 | `AcousticEventBus.h/.cpp` | Server intake |

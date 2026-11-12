@@ -24,8 +24,9 @@ enum class StimulusCategory : std::uint8_t {
     Generator,
     Environmental,
     Decoy,
+    Alarm,  // facility sirens and klaxons (added for the environmental systems)
 };
-inline constexpr std::size_t kCategoryCount = 12;
+inline constexpr std::size_t kCategoryCount = 13;
 template <class T>
 using CategoryArray = std::array<T, kCategoryCount>;
 inline constexpr std::size_t Index(StimulusCategory c) { return static_cast<std::size_t>(c); }

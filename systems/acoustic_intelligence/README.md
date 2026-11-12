@@ -14,7 +14,7 @@ that has been compiled.
 
 | Area | Status |
 |---|---|
-| Event model, 12 stimulus categories, surfaces, decoy signatures | **Implemented + tested** |
+| Event model, 13 stimulus categories (incl. `Alarm`, added for the environmental systems), surfaces, decoy signatures | **Implemented + tested** |
 | Propagation: distance, air absorption, occlusion, materials, interior/exterior, rain, wind, ambient masking | **Implemented + tested** (gameplay approximation, not acoustics) |
 | Server event bus: authority, validation, dedup, token-bucket rate limiting, bounded priority queue | **Implemented + tested** incl. adversarial floods |
 | Robot brain: memory traces, fusion, confidence decay, 6-state investigation machine, search, habituation | **Implemented + tested** |
